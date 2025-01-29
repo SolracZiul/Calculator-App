@@ -1,5 +1,6 @@
 import 'package:expressions/expressions.dart';
 import 'package:flutter/material.dart';
+import 'dart:math';
 
 class Calculator extends StatefulWidget {
   const Calculator({super.key});
@@ -20,6 +21,8 @@ class _CalculatorState extends State<Calculator> {
         _resultado = '';
       } else if (valor == '=') {
         _calcularResultado();
+      } else if (valor == '←' && _expressao.isNotEmpty) {
+        _expressao = _expressao.substring(0, _expressao.length - 1);
       } else {
         _expressao += valor;
       }
@@ -30,28 +33,39 @@ class _CalculatorState extends State<Calculator> {
     try {
       _resultado = _avaliarExpressao(_expressao).toString();
     } catch (e) {
-      _resultado = 'It is not possible to calculate';
+      _resultado = 'Erro de cálculo';
     }
   }
 
   double _avaliarExpressao(String expressao) {
-    expressao = expressao.replaceAll('x', '*');
-    expressao = expressao.replaceAll('÷', '/');
-    // Avaliar a espressao com a biblioteca expressions
+    expressao = expressao.replaceAll('x', '*').replaceAll('÷', '/');
+
+    final functions = {
+      'sin': (num x) => sin(x),
+      'cos': (num x) => cos(x),
+      'tan': (num x) => tan(x),
+      'log': (num x) => log(x),
+      'sqrt': (num x) => sqrt(x),
+      'exp': (num x) => exp(x),
+    };
+
     ExpressionEvaluator avaliador = const ExpressionEvaluator();
-    double resultado = avaliador.eval(Expression.parse(expressao), {});
-    return resultado;
+    var resultado = avaliador.eval(
+      Expression.parse(expressao),
+      functions.map((k, v) => MapEntry(k, (args) => v(args[0])))
+    );
+
+    return resultado is num ? resultado.toDouble() : double.nan;
   }
 
   Widget _botao(String valor) {
     return TextButton(
       style: TextButton.styleFrom(
-        backgroundColor:
-            const Color.fromARGB(255, 50, 48, 85), // Cor de fundo do botão
-        foregroundColor: Colors.white, // Cor do texto
-        padding: const EdgeInsets.all(16.0), // Espaçamento interno
+        backgroundColor: const Color.fromARGB(255, 50, 48, 85),
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.all(16.0),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8.0), // Bordas arredondadas
+          borderRadius: BorderRadius.circular(8.0),
         ),
       ),
       child: Text(
@@ -83,31 +97,18 @@ class _CalculatorState extends State<Calculator> {
           child: GridView.count(
             crossAxisCount: 4,
             childAspectRatio: 2,
-            mainAxisSpacing: 2.0, // Espaçamento vertical entre os botões
-            crossAxisSpacing: 2.0, // Espaçamento horizontal entre os botões
+            mainAxisSpacing: 2.0,
+            crossAxisSpacing: 2.0,
             children: [
-              _botao('7'),
-              _botao('8'),
-              _botao('9'),
-              _botao('÷'),
-              _botao('4'),
-              _botao('5'),
-              _botao('6'),
-              _botao('x'),
-              _botao('1'),
-              _botao('2'),
-              _botao('3'),
-              _botao('-'),
-              _botao('0'),
-              _botao('.'),
-              _botao('='),
-              _botao('+'),
+              _botao('7'), _botao('8'), _botao('9'), _botao('÷'),
+              _botao('4'), _botao('5'), _botao('6'), _botao('x'),
+              _botao('1'), _botao('2'), _botao('3'), _botao('-'),
+              _botao('0'), _botao('.'), _botao('='), _botao('+'),
+              _botao('sin'), _botao('cos'), _botao('tan'), _botao('log'),
+              _botao('sqrt'), _botao('exp'), _botao('←'), _botao(_limpar),
             ],
           ),
         ),
-        Expanded(
-          child: _botao(_limpar),
-        )
       ],
     );
   }
